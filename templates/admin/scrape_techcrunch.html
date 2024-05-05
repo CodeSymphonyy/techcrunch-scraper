@@ -1,0 +1,18 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main">
+  <h1>Scrape TechCrunch for Keywords</h1>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="form-row">
+      {{ form.search_term.errors }}
+      {{ form.search_term.label_tag }} {{ form.search_term }}
+    </div>
+    <div class="form-row">
+      <input type="submit" value="Start Scraping" class="default" name="do_action">
+    </div>
+  </form>
+</div>
+{% endblock %}

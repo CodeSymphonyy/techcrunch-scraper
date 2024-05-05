@@ -1,0 +1,89 @@
+version: '4.29.0'
+
+networks:
+  app-network:
+    driver: bridge
+
+services:
+  web:
+    build: .
+    command: gunicorn techcrunch_scraper.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/code
+      - static_volume:/code/staticfiles
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  redis:
+    image: redis:6.0-alpine
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+  celery:
+    build: .
+    command: celery -A techcrunch_scraper worker -l info
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - web
+      - redis
+    networks:
+      - app-network
+
+  celery-beat:
+    build: .
+    command: celery -A techcrunch_scraper beat -l info
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - web
+      - redis
+    networks:
+      - app-network
+
+  flower:
+    build: .
+    command: celery -A techcrunch_scraper flower --address=0.0.0.0 --port=5555
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/code
+      - DJANGO_SETTINGS_MODULE=techcrunch_scraper.settings
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    restart: on-failure
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/static
+      - ./nginx_logs:/var/log/nginx
+    depends_on:
+      - web
+    networks:
+      - app-network
+
+volumes:
+  static_volume:
+  redis-data:

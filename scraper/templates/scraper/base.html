@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Download Page{% endblock %}</title>
+    <!-- Add any additional head content or links to CSS files here -->
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <header>
+        <h1>{% block header %}Download Links{% endblock %}</h1>
+    </header>
+    <main>
+        {% block content %}
+        <!-- Content overridden by child templates will appear here -->
+        {% endblock %}
+    </main>
+    <footer>
+        {% block footer %}
+        <!-- Footer content can go here -->
+        <p>&copy; 2024 Your Website</p>
+        {% endblock %}
+    </footer>
+    <!-- Add any additional JavaScript files or scripts at the bottom -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

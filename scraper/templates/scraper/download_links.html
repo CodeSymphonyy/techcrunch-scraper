@@ -1,0 +1,25 @@
+{% extends 'scraper/base.html' %} <!-- Extend from your base template -->
+
+{% block content %}
+    <!-- Display links for category-related files if available -->
+    {% if download_urls_by_category %}
+        <ul>
+            {% for filename, url in download_urls_by_category %}
+                <li><a href="{{ url }}">{{ filename }}</a></li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No category files to download.</p>
+    {% endif %}
+
+    <!-- Display links for keyword-related files if available -->
+    {% if download_urls_by_keyword %}
+        <ul>
+            {% for filename, url in download_urls_by_keyword %}
+                <li><a href="{{ url }}">{{ filename }}</a></li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No keyword files to download.</p>
+    {% endif %}
+{% endblock %}
