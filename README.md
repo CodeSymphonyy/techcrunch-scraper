@@ -52,6 +52,9 @@ There are two important actions for articles:
   - **Export articles by categories**
   - **Export articles by keyword**
 
+### Monitoring Celery Tasks with Flower
+- To monitor tasks, access the Flower dashboard by navigating to [http://localhost:5555](http://localhost:5555). Flower provides a real-time view of the task queue, ongoing tasks, and task history.
+
 ## Features
 - **Keyword-based scraping**: Scrape articles by specific keywords.
 - **Category-based scraping**: Automatically scrape articles by category at scheduled times.
