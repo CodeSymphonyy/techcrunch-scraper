@@ -12,6 +12,7 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.common.exceptions import NoSuchElementException
 from datetime import datetime
 import pytz
 
@@ -56,8 +57,16 @@ class Command(BaseCommand):
         chrome_options.add_argument("--ignore-certificate-errors")
         chrome_options.add_argument("--disable-plugins-discovery")
         chrome_options.add_argument("--incognito")  # Use Chrome in Incognito mode
+        chrome_options.add_argument("--single-process")  # Run Chrome in single-process mode
+        chrome_options.add_argument("--disable-dev-shm-usage")  # Disable /dev/shm usage
+        chrome_options.add_argument("--remote-debugging-port=9222")  # Enable remote debugging
+        chrome_options.add_argument("--log-level=3")  # Minimize logging
+        # chrome_options.add_argument("--disable-software-rasterizer")  # Disable software rasterizer
+        # chrome_options.add_argument("--disable-background-networking")  # Disable background networking
+        chrome_options.add_argument("--disable-features=VizDisplayCompositor")  # Disable Viz Display Compositor
         caps = DesiredCapabilities.CHROME
-        caps["pageLoadStrategy"] = "none"  # Do not wait for the full page to load
+        # caps["pageLoadStrategy"] = "none"  # Do not wait for the full page to load
+        caps["pageLoadStrategy"] = "eager"
 
         try:
             driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
@@ -65,55 +74,72 @@ class Command(BaseCommand):
                 response = requests.get(url)
                 print(url)
                 soup = BeautifulSoup(response.content, 'html.parser')
-                title_element = soup.select_one('.article__title')
+                title_element = soup.select_one('h1.wp-block-post-title')
                 if title_element:
                     title = title_element.text.strip()
                 else:
                     title = "Title not found"
-                publication_date = soup.select_one("meta[property='article:published_time']")['content']
-                dt = datetime.fromisoformat(publication_date)
+                publication_date_element = soup.select_one("div.wp-block-post-date > time")
+                publication_date = publication_date_element['datetime'] if publication_date_element else None
+                # print(f"Publication date: {publication_date}")
 
-                # Ensure the datetime object is timezone-aware in UTC
-                if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
-                    localized_dt = dt.replace(tzinfo=pytz.UTC)
+                if publication_date:
+                    try:
+                        dt = datetime.fromisoformat(publication_date)
+                        localized_dt = dt if dt.tzinfo else dt.replace(tzinfo=pytz.UTC)
+                    except ValueError as e:
+                        print(f"Error parsing date {publication_date}: {e}")
+                        localized_dt = None
                 else:
-                    # If 'dt' is already timezone-aware, convert it to UTC
-                    localized_dt = dt.astimezone(pytz.UTC)
-                article_content = ' '.join([p.text.strip() for p in soup.select('.article-content p')])
-                image_element = soup.select_one('.article__featured-image')
+                    localized_dt = None
+                try:
+                    article_content_elements = soup.select('.wp-block-post-content p')
+                    article_content = ' '.join([p.text.strip() for p in article_content_elements])
+                    if not article_content:
+                        print("Article content is empty. Check selector or page structure.")
+                except Exception as e:
+                    print(f"Error extracting content: {e}")
+                    article_content = "Content extraction failed"
+                image_element = soup.select_one('figure.wp-block-post-featured-image > img')
                 if image_element:
                     article_image_url = image_element['src']
                 else:
                     article_image_url = "Image URL not found"
 
-                driver.get(url)
-                try:
-                    WebDriverWait(driver, 10).until(EC.presence_of_element_located(
-                        (By.CSS_SELECTOR, 'header.article__header > div.article__title-wrapper')))
-                except TimeoutException:
-                    print("The element did not load within 10 seconds.")
+                retry_attempts = 1
+                while retry_attempts > 0:
+                    try:
+                        driver.get(url)
+                        WebDriverWait(driver, 15).until(EC.presence_of_element_located(
+                            (By.CSS_SELECTOR, 'header.article__header > div.article__title-wrapper')))
+                        break  # Break out of the retry loop if successful
+                    except TimeoutException:
+                        print("The element did not load within 10 seconds.")
+                        retry_attempts -= 1
+                        if retry_attempts == 0:
+                            continue
 
                 page_source = driver.page_source  # Get the HTML source of the page
                 author_soup = BeautifulSoup(page_source, 'html.parser')  # Parse it with BeautifulSoup
 
                 # Now, use BeautifulSoup to find elements as usual
-                author_element = author_soup.select_one('.article__byline a')
+                author_element = author_soup.select_one('div.wp-block-tc23-author-card-name > a')
                 if author_element:
                     author = author_element.text.strip()
                 else:
                     author = "Author not found"
 
                 try:
-                    category_element = driver.find_element(By.CSS_SELECTOR, '.article__primary-category a')
+                    category_element = driver.find_element(By.CSS_SELECTOR, 'a.is-taxonomy-category')
                     category = category_element.text
                 except NoSuchElementException:
                     try:
-                        category_element = driver.find_element(By.CSS_SELECTOR, '.article__event-title .gradient-text')
+                        category_element = driver.find_element(By.CSS_SELECTOR, 'a.is-taxonomy-category')
                         category = category_element.text
                     except NoSuchElementException:
                         category = "Category not found"
 
-                tags_elements = driver.find_elements(By.CSS_SELECTOR, '.article__tags__menu .menu__item a')
+                tags_elements = driver.find_elements(By.CSS_SELECTOR, 'div.taxonomy-post_tag.wp-block-post-terms a')
                 tags = [element.text for element in tags_elements]
 
                 # Save or retrieve the category

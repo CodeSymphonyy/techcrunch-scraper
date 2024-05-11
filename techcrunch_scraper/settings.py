@@ -129,12 +129,14 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
+"""
 CELERY_BEAT_SCHEDULE = {
     'scrape_techcrunch_categories_every_24_hours': {
         'task': 'scraper.tasks.scrape_techcrunch_categories_task',
-        'schedule': crontab(hour=0, minute=0),  # Runs daily at midnight
+        'schedule': crontab(hour=10, minute=10),  # Runs daily at midnight
     },
 }
+"""
 
 LOGGING = {
     'version': 1,

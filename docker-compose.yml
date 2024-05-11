@@ -31,7 +31,7 @@ services:
 
   celery:
     build: .
-    command: celery -A techcrunch_scraper worker -l info
+    command: celery -A techcrunch_scraper worker -l info --concurrency=5  # Increase concurrency to 5
     volumes:
       - .:/code
     env_file:
