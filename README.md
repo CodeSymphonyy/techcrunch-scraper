@@ -57,10 +57,9 @@ There are two important actions for articles:
 
 ## Features
 - **Keyword-based scraping**: Scrape articles by specific keywords.
-<!-- - **Category-based scraping**: Automatically scrape articles by category at scheduled times. -->
 - **Data export**: Export scraped data in CSV and JSON formats, zipped for convenience.
 - **Admin interface customization**: Custom Django admin actions and pages for better management.
-
+<!-- - **Category-based scraping**: Automatically scrape articles by category at scheduled times. -->
 ## Dependencies
 This project is built using:
 - Django 4.2
